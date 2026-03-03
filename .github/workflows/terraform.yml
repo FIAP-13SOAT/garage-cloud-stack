@@ -1,0 +1,87 @@
+name: Terraform - Provision Infrastructure
+
+on:
+    workflow_call:
+        outputs:
+            db_endpoint:
+                description: "RDS endpoint"
+                value: ${{ jobs.terraform.outputs.db_endpoint }}
+            db_secret_arn:
+                description: "ARN do secret com credenciais do banco"
+                value: ${{ jobs.terraform.outputs.db_secret_arn }}
+
+env:
+    AWS_REGION: us-east-1
+
+jobs:
+    terraform:
+        name: Provision Infrastructure with Terraform
+        runs-on: ubuntu-latest
+
+        concurrency:
+            group: terraform-${{ github.ref }}
+            cancel-in-progress: false
+
+        outputs:
+            db_endpoint: ${{ steps.tf-output.outputs.db_endpoint }}
+            db_secret_arn: ${{ steps.tf-output.outputs.db_secret_arn }}
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Create S3 bucket for Terraform state if not exists
+              run: |
+                  if ! aws s3 ls s3://garage-terraform-state-634482669004 2>/dev/null; then
+                    echo "Creating S3 bucket for Terraform state..."
+                    aws s3 mb s3://garage-terraform-state-634482669004 --region us-east-1
+                  else
+                    echo "S3 bucket already exists"
+                  fi
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: 1.5.0
+                  terraform_wrapper: false
+
+            - name: Terraform Init
+              working-directory: ./infra
+              run: terraform init -input=false
+
+            - name: Terraform Plan
+              id: plan
+              working-directory: ./infra
+              continue-on-error: true
+              run: |
+                  set +e
+                  terraform plan -detailed-exitcode
+                  PLAN_EXIT_CODE=$?
+                  set -e
+                  echo "Plan exit code: $PLAN_EXIT_CODE"
+                  echo "exitcode=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+
+            - name: Terraform Apply
+              if: steps.plan.outputs.exitcode == '2'
+              working-directory: ./infra
+              run: |
+                  echo "Applying infrastructure changes..."
+                  terraform apply -auto-approve
+
+            - name: Get Terraform Outputs
+              id: tf-output
+              working-directory: ./infra
+              run: |
+                  DB_ENDPOINT=$(terraform output -raw rds_endpoint)
+                  DB_SECRET_ARN=$(terraform output -raw db_secret_arn)
+
+                  echo "db_endpoint=$DB_ENDPOINT" >> $GITHUB_OUTPUT
+                  echo "db_secret_arn=$DB_SECRET_ARN" >> $GITHUB_OUTPUT
