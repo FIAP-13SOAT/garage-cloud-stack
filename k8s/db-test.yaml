@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+metadata:
+    name: db-test
+    labels:
+        app: db-test
+spec:
+    restartPolicy: Never
+    containers:
+        - name: db-test
+          image: postgres:16
+          command: ["sh", "-c"]
+          args:
+              - |
+                  if PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -c "SELECT 1;" ; then
+                    echo "✅ Connection successful"
+                    exit 0
+                  else
+                    echo "❌ Connection failed"
+                    exit 1
+                  fi
+          env:
+              - name: DB_HOST
+                valueFrom:
+                    configMapKeyRef:
+                        name: garage-config
+                        key: DB_HOST
+              - name: DB_PORT
+                valueFrom:
+                    configMapKeyRef:
+                        name: garage-config
+                        key: DB_PORT
+              - name: DB_NAME
+                valueFrom:
+                    configMapKeyRef:
+                        name: garage-config
+                        key: DB_NAME
+              - name: DB_USER
+                valueFrom:
+                    secretKeyRef:
+                        name: db-credentials
+                        key: username
+              - name: DB_PASSWORD
+                valueFrom:
+                    secretKeyRef:
+                        name: db-credentials
+                        key: password

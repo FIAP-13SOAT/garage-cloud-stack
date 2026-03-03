@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: garage-service
+spec:
+    selector:
+        app: garage-app
+    ports:
+        - port: 80
+          targetPort: 8080
+    type: LoadBalancer  # Cria um Load Balancer na AWS
