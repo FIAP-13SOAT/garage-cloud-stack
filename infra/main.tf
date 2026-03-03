@@ -5,9 +5,9 @@ terraform {
             version = "6.17.0"
         }
     }
-    
+
     backend "s3" {
-        bucket = "garage-terraform-state-921831200874"
+        bucket = "garage-terraform-state-634482669004"
         key    = "terraform.tfstate"
         region = "us-east-1"
     }
