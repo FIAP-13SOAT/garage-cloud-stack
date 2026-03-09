@@ -26,6 +26,6 @@ output "db_secret_arn" {
     value       = length(aws_db_instance.postgres.master_user_secret) > 0 ? aws_db_instance.postgres.master_user_secret[0].secret_arn : ""
 }
 
-output "ecr_repository_url" {
-    value = data.aws_ecr_image.lambda_image.image_uri
-}
+# output "ecr_repository_url" {
+#     value = data.aws_ecr_image.lambda_image.image_uri
+# }
