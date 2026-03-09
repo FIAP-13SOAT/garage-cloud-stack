@@ -27,6 +27,17 @@ resource "aws_security_group_rule" "rds_ingress_eks" {
     description = "Allow EKS Nodes to access RDS"
 }
 
+# Permite Lambda acessar RDS
+resource "aws_security_group_rule" "rds_ingress_lambda" {
+    type                     = "ingress"
+    from_port                = 5432
+    to_port                  = 5432
+    protocol                 = "tcp"
+    security_group_id        = aws_security_group.rds.id
+    source_security_group_id = aws_security_group.lambda.id
+    description              = "Allow Lambda to access RDS"
+}
+
 # Security Group para o EKS cluster - controla tráfego de rede
 resource "aws_security_group" "main" {
     name_prefix = "${local.projectName}-eks-sg"
@@ -48,6 +59,14 @@ resource "aws_security_group" "main" {
         self      = true
     }
 
+    # Permite API Gateway acessar EKS via VPC Link
+    ingress {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["10.0.0.0/16"]
+    }
+
     egress {
         from_port   = 0
         to_port     = 0
@@ -57,5 +76,22 @@ resource "aws_security_group" "main" {
 
     tags = {
         name = "${local.projectName}-eks-security-group"
+    }
+}
+
+# Security Group para Lambda
+resource "aws_security_group" "lambda" {
+    name_prefix = "${local.projectName}-lambda-sg"
+    vpc_id      = aws_vpc.main.id
+
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    tags = {
+        name = "${local.projectName}-lambda-security-group"
     }
 }
