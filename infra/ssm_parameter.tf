@@ -20,12 +20,14 @@ resource "aws_ssm_parameter" "private_subnet_id" {
     name  = "/garage/prod/garage/private_subnet_id"
     type  = "String"
     value = aws_subnet.private_subnet.id
+    overwrite = true  # temporario
 }
 
 resource "aws_ssm_parameter" "private_subnet_b_id" {
     name  = "/garage/prod/garage/private_subnet_b_id"
     type  = "String"
     value = aws_subnet.private_subnet_b.id
+    overwrite = true # temporario
 }
 
 resource "aws_ssm_parameter" "alb_dns" {
