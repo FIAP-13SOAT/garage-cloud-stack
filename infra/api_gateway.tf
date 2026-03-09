@@ -33,7 +33,7 @@ resource "aws_apigatewayv2_authorizer" "jwt_authorizer" {
     identity_sources = ["$request.header.Authorization"]
 
     jwt_configuration {
-        issuer   = "meu-auth"
+        issuer   = "https://api.fiapchallenge.com"
         audience = ["my-api"]
     }
 }
