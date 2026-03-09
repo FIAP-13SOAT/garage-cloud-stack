@@ -27,5 +27,5 @@ output "db_secret_arn" {
 }
 
 output "ecr_repository_url" {
-    value = aws_ecr_repository.services.repository_url
+    value = data.aws_ecr_image.lambda_image.image_uri
 }
