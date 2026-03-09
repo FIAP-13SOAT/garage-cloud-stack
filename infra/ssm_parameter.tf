@@ -23,7 +23,7 @@ resource "aws_ssm_parameter" "private_subnet_id" {
 }
 
 resource "aws_ssm_parameter" "private_subnet_b_id" {
-    name  = "/garage/prod/garage/private_subnet_id"
+    name  = "/garage/prod/garage/private_subnet_b_id"
     type  = "String"
     value = aws_subnet.private_subnet_b.id
 }
