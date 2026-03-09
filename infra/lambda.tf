@@ -3,50 +3,12 @@ data "aws_ecr_image" "lambda_image" {
     image_tag       = var.image_tag
 }
 
-// IAM ROLE - LAMBDA EXECUTION
-resource "aws_iam_role" "lambda_exec" {
-    name = "${var.lambda_function_name}-exec"
-
-    assume_role_policy = jsonencode({
-        Version = "2012-10-17",
-        Statement = [{
-            Action    = "sts:AssumeRole",
-            Effect    = "Allow",
-            Principal = { Service = "lambda.amazonaws.com" }
-        }]
-    })
-}
-
-// IAM POLICY - LAMBDA EXECUTION
-resource "aws_iam_role_policy_attachment" "lambda_basic" {
-    role       = aws_iam_role.lambda_exec.name
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
-// IAM POLICY - VPC ACCESS
-resource "aws_iam_role_policy_attachment" "lambda_vpc" {
-    role       = aws_iam_role.lambda_exec.name
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-}
-
-// IAM POLICY - SECRETS MANAGER
-resource "aws_iam_role_policy_attachment" "lambda_secrets" {
-    role       = aws_iam_role.lambda_exec.name
-    policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
-}
-
-// IAM POLICY - ECR READONLY
-resource "aws_iam_role_policy_attachment" "ecr_readonly" {
-    role       = aws_iam_role.lambda_exec.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
 # LAMBDA FUNCTION - LOGIN (conecta ao RDS)
 resource "aws_lambda_function" "terraform_lambda" {
     function_name = var.lambda_function_name
     package_type  = "Image"
     image_uri     = data.aws_ecr_image.lambda_image.image_uri
-    role          = aws_iam_role.lambda_exec.arn
+    role          = "arn:aws:iam::${var.accountId}:role/LabRole"
     memory_size   = 1024
     timeout       = 30
 
@@ -108,31 +70,12 @@ resource "aws_lambda_permission" "allow_apigw" {
 # LAMBDA AUTHORIZER
 ########################################
 
-# IAM ROLE - AUTHORIZER
-resource "aws_iam_role" "authorizer_exec" {
-    name = "${var.lambda_function_name}-authorizer-exec"
-
-    assume_role_policy = jsonencode({
-        Version = "2012-10-17",
-        Statement = [{
-            Action    = "sts:AssumeRole",
-            Effect    = "Allow",
-            Principal = { Service = "lambda.amazonaws.com" }
-        }]
-    })
-}
-
-resource "aws_iam_role_policy_attachment" "authorizer_basic" {
-    role       = aws_iam_role.authorizer_exec.name
-    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-}
-
 # LAMBDA AUTHORIZER FUNCTION
 resource "aws_lambda_function" "authorizer" {
     function_name = "${var.lambda_function_name}-authorizer"
     package_type  = "Image"
     image_uri     = "${data.aws_ecr_image.lambda_image.registry_id}.dkr.ecr.${local.awsRegion}.amazonaws.com/${var.authorizer_repository_name}:${var.image_tag}"
-    role          = aws_iam_role.authorizer_exec.arn
+    role          = "arn:aws:iam::${var.accountId}:role/LabRole"
     memory_size   = 512
     timeout       = 10
 
