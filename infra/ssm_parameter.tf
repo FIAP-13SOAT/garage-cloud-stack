@@ -10,11 +10,6 @@ resource "aws_ssm_parameter" "db_secret_arn" {
     value = length(aws_db_instance.postgres.master_user_secret) > 0 ? aws_db_instance.postgres.master_user_secret[0].secret_arn : ""
 }
 
-resource "aws_ssm_parameter" "garage_eks_arn" {
-    name = "/garage/prod/garage/garage_eks_arn"
-    type = "String"
-}
-
 resource "aws_ssm_parameter" "security_group_main_id" {
     name  = "/garage/prod/garage/security_group_main_id"
     type  = "String"
@@ -36,4 +31,9 @@ resource "aws_ssm_parameter" "private_subnet_b_id" {
 resource "aws_ssm_parameter" "alb_dns" {
     name  = "/garage/prod/garage/alb_dns"
     type  = "String"
+    value = "NULL"
+
+    lifecycle {
+        ignore_changes = [value]
+    }
 }
