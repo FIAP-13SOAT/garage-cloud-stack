@@ -30,3 +30,26 @@ resource "aws_lambda_function" "login_lambda" {
         }
     }
 }
+
+resource "aws_lambda_function" "auth_lambda" {
+    function_name = var.lambda_auth_validator_function_name
+    package_type  = "Image"
+
+    image_uri = "public.ecr.aws/lambda/provided:al2"
+
+    role = "arn:aws:iam::${var.accountId}:role/LabRole"
+
+    memory_size = 1024
+    timeout     = 30
+
+    lifecycle {
+        ignore_changes = [
+            image_uri
+        ]
+    }
+
+    vpc_config {
+        subnet_ids         = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
+        security_group_ids = [aws_security_group.lambda.id]
+    }
+}

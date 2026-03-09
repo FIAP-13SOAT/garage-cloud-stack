@@ -11,9 +11,15 @@ variable "authorizer_repository_name" {
 }
 
 variable "lambda_function_name" {
+    description = "Name of the lambda"
+    type        = string
+    default     = "GarageAuthIssuerFunction"
+}
+
+variable "lambda_auth_validator_function_name" {
     description = "Name of the lambda ECR repository"
     type        = string
-    default     = "garage-auth-function"
+    default     = "GarageAuthValidatorFunction"
 }
 
 variable "image_tag" {
