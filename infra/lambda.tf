@@ -1,16 +1,19 @@
-data "aws_ecr_image" "lambda_image" {
-    repository_name = var.repository_name
-    image_tag       = var.image_tag
-}
-
 resource "aws_lambda_function" "login_lambda" {
     function_name = var.lambda_function_name
     package_type  = "Image"
-    image_uri     = data.aws_ecr_image.lambda_image.image_uri
-    role          = "arn:aws:iam::${var.accountId}:role/LabRole"
+
+    image_uri = "public.ecr.aws/lambda/provided:al2"
+
+    role = "arn:aws:iam::${var.accountId}:role/LabRole"
 
     memory_size = 1024
     timeout     = 30
+
+    lifecycle {
+        ignore_changes = [
+            image_uri
+        ]
+    }
 
     vpc_config {
         subnet_ids         = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
