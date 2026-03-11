@@ -15,6 +15,10 @@ data "aws_ssm_parameter" "alb_dns" {
     name = "/garage/prod/garage/alb_dns"
 }
 
+data "aws_ssm_parameter" "app_dns_region_id" {
+    name = "/garage/prod/garage/app_dns_region_id"
+}
+
 # 2. VPC Link (A ponte entre o API Gateway e rede privada)
 resource "aws_apigatewayv2_vpc_link" "eks" {
     name               = "${local.projectName}-vpc-link"
@@ -32,14 +36,21 @@ resource "aws_apigatewayv2_api" "main" {
     protocol_type = "HTTP"
 }
 
-resource "aws_apigatewayv2_integration" "eks" {
-    api_id             = aws_apigatewayv2_api.main.id
-    integration_type   = "HTTP_PROXY"
+resource "aws_route53_record" "api" {
+    zone_id = data.aws_ssm_parameter.app_dns_region_id.value
+    name    = "api.${local.dns}"
+    type    = "CNAME"
+    ttl     = 300
 
-    # IMPORTANTE: Aqui vai o DNS do Load Balancer, não o ARN do EKS
+    records = [data.aws_ssm_parameter.alb_dns.value]
+}
+
+
+resource "aws_apigatewayv2_integration" "eks" {
+    pi_id           = aws_apigatewayv2_api.main.id
+    integration_type = "HTTP_PROXY"
+
     integration_uri    = "http://${data.aws_ssm_parameter.alb_dns.value}"
 
     integration_method = "ANY"
-    connection_type    = "VPC_LINK"
-    connection_id      = aws_apigatewayv2_vpc_link.eks.id
 }

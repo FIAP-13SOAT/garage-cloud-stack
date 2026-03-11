@@ -30,6 +30,12 @@ resource "aws_ssm_parameter" "private_subnet_b_id" {
     overwrite = true # temporario
 }
 
+resource "aws_ssm_parameter" "app_dns_region_id" {
+    name  = "/garage/prod/garage/app_dns_region_id"
+    type  = "String"
+    value = aws_route53_zone.app_dns.zone_id
+}
+
 resource "aws_ssm_parameter" "alb_dns" {
     name  = "/garage/prod/garage/alb_dns"
     type  = "String"

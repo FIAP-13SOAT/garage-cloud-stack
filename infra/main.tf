@@ -15,6 +15,7 @@ terraform {
 
 locals {
     projectName = "garage"
+    dns = "fiapgarage2026.com"
     awsRegion = "us-east-1"
 }
 
