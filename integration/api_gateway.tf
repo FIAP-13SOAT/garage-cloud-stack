@@ -61,3 +61,9 @@ resource "aws_apigatewayv2_route" "eks_proxy" {
 
     target = "integrations/${aws_apigatewayv2_integration.eks.id}"
 }
+
+resource "aws_apigatewayv2_stage" "default" {
+    api_id      = aws_apigatewayv2_api.main.id
+    name        = "$default"
+    auto_deploy = true
+}
