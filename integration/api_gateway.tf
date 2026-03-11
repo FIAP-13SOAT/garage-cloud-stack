@@ -54,3 +54,10 @@ resource "aws_apigatewayv2_integration" "eks" {
     integration_method      = "ANY"
     payload_format_version  = "1.0"
 }
+
+resource "aws_apigatewayv2_route" "eks_proxy" {
+    api_id    = aws_apigatewayv2_api.main.id
+    route_key = "ANY /{proxy+}"
+
+    target = "integrations/${aws_apigatewayv2_integration.eks.id}"
+}
