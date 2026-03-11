@@ -36,15 +36,6 @@ resource "aws_apigatewayv2_api" "main" {
     protocol_type = "HTTP"
 }
 
-resource "aws_route53_record" "api" {
-    zone_id = data.aws_ssm_parameter.app_dns_region_id.value
-    name    = "api.${local.dns}"
-    type    = "CNAME"
-    ttl     = 300
-
-    records = [data.aws_ssm_parameter.alb_dns.value]
-}
-
 resource "aws_apigatewayv2_integration" "eks" {
     api_id           = aws_apigatewayv2_api.main.id
     integration_type = "HTTP_PROXY"
