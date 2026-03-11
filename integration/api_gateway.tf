@@ -19,16 +19,16 @@ data "aws_ssm_parameter" "app_dns_region_id" {
     name = "/garage/prod/garage/app_dns_region_id"
 }
 
-# 2. VPC Link (A ponte entre o API Gateway e rede privada)
-resource "aws_apigatewayv2_vpc_link" "eks" {
-    name               = "${local.projectName}-vpc-link"
-    # Adicionado .value aqui:
-    security_group_ids = [data.aws_ssm_parameter.security_group_main_id.value]
-    subnet_ids         = [
-        data.aws_ssm_parameter.private_subnet_id.value,
-        data.aws_ssm_parameter.private_subnet_b_id.value
-    ]
-}
+# # 2. VPC Link (A ponte entre o API Gateway e rede privada)
+# resource "aws_apigatewayv2_vpc_link" "eks" {
+#     name               = "${local.projectName}-vpc-link"
+#     # Adicionado .value aqui:
+#     security_group_ids = [data.aws_ssm_parameter.security_group_main_id.value]
+#     subnet_ids         = [
+#         data.aws_ssm_parameter.private_subnet_id.value,
+#         data.aws_ssm_parameter.private_subnet_b_id.value
+#     ]
+# }
 
 # 3. API e Integração
 resource "aws_apigatewayv2_api" "main" {
@@ -45,12 +45,12 @@ resource "aws_route53_record" "api" {
     records = [data.aws_ssm_parameter.alb_dns.value]
 }
 
-
 resource "aws_apigatewayv2_integration" "eks" {
-    pi_id           = aws_apigatewayv2_api.main.id
+    api_id           = aws_apigatewayv2_api.main.id
     integration_type = "HTTP_PROXY"
 
-    integration_uri    = "http://${data.aws_ssm_parameter.alb_dns.value}"
+    integration_uri = "http://${data.aws_ssm_parameter.alb_dns.value}"
 
-    integration_method = "ANY"
+    integration_method      = "ANY"
+    payload_format_version  = "1.0"
 }
