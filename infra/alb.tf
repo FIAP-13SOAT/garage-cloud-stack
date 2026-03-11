@@ -40,7 +40,7 @@ resource "aws_lb_target_group" "k8s_app" {
     }
 }
 
-# 4. Listener (O ARN para o API Gateway)
+# 4. Listener (O ARN que o API Gateway tanto queria!)
 resource "aws_lb_listener" "http" {
     load_balancer_arn = aws_lb.main.arn
     port              = "80"
