@@ -16,8 +16,8 @@ resource "aws_eks_cluster" "eks_cluster" {
         security_group_ids = [
             aws_security_group.main.id
         ]
-        endpoint_public_access  = true
-        endpoint_private_access = false
+        endpoint_public_access  = false
+        endpoint_private_access = true
     }
 
     access_config {
