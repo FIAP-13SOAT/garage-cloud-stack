@@ -65,6 +65,7 @@ resource "aws_route_table" "public" {
 
     tags = {
         Name = "${local.projectName}-public-rt"
+        "kubernetes.io/cluster/garage-cluster" = "owned"
     }
 }
 
@@ -89,6 +90,7 @@ resource "aws_subnet" "private_subnet" {
     tags = {
         Name = "${local.projectName}-private-subnet"
         "kubernetes.io/role/internal-elb" = "1"
+        "kubernetes.io/cluster/garage-cluster" = "owned"
     }
 }
 
@@ -101,6 +103,7 @@ resource "aws_subnet" "private_subnet_b" {
     tags = {
         Name = "${local.projectName}-private-subnet-b"
         "kubernetes.io/role/internal-elb" = "1"
+        "kubernetes.io/cluster/garage-cluster" = "owned"
     }
 }
 
