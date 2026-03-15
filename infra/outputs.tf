@@ -25,3 +25,7 @@ output "db_secret_arn" {
     description = "ARN do secret contendo a senha do banco PostgreSQL"
     value       = length(aws_db_instance.postgres.master_user_secret) > 0 ? aws_db_instance.postgres.master_user_secret[0].secret_arn : ""
 }
+
+# output "ecr_repository_url" {
+#     value = data.aws_ecr_image.lambda_image.image_uri
+# }
