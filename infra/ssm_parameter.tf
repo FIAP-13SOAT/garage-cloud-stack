@@ -44,6 +44,8 @@ resource "aws_ssm_parameter" "alb_dns" {
     lifecycle {
         ignore_changes = [value]
     }
+}
+
 resource "aws_ssm_parameter" "jwt_secret" {
     name  = "/garage/prod/jwt/secret"
     type  = "SecureString"
