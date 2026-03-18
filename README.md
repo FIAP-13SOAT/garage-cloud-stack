@@ -6,3 +6,5 @@ O deploy é automatizado quando o merge é feito na main.
 ## Diagrama de Arquitetura de Infraestrutura
 
 ![Arquitetura da aplicação em nuvem](docs/infra.png)
+
+![FIAP-Acesso.drawio.png](./FIAP-Acesso.drawio.png)
