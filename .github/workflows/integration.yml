@@ -29,9 +29,9 @@ jobs:
 
             - name: Create S3 bucket for Terraform state if not exists
               run: |
-                  if ! aws s3 ls s3://garage-integration-terraform-state-116023293527 2>/dev/null; then
+                  if ! aws s3 ls s3://garage-integration-terraform-state-381492225614 2>/dev/null; then
                     echo "Creating S3 bucket for Terraform state..."
-                    aws s3 mb s3://garage-integration-terraform-state-116023293527 --region us-east-1
+                    aws s3 mb s3://garage-integration-terraform-state-381492225614 --region us-east-1
                   else
                     echo "S3 bucket already exists"
                   fi
