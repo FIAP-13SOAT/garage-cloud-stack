@@ -1,3 +1,11 @@
+data "aws_ssm_parameter" "db_endpoint" {
+    name = "/garage/prod/db/endpoint"
+}
+
+data "aws_ssm_parameter" "db_secret_arn" {
+    name = "/garage/prod/db/secret_arn"
+}
+
 resource "aws_lambda_function" "login_lambda" {
     function_name = var.lambda_function_name
     package_type  = "Image"
@@ -22,10 +30,10 @@ resource "aws_lambda_function" "login_lambda" {
 
     environment {
         variables = {
-            DB_HOST     = aws_db_instance.postgres.address
-            DB_NAME     = aws_db_instance.postgres.db_name
-            DB_USER     = aws_db_instance.postgres.username
-            DB_PASSWORD = aws_db_instance.postgres.master_user_secret[0].secret_arn
+            DB_HOST     = data.aws_ssm_parameter.db_endpoint.value
+            DB_NAME     = "garage"
+            DB_USER     = "postgres"
+            DB_PASSWORD = data.aws_ssm_parameter.db_secret_arn.value
             JWT_SECRET  = aws_ssm_parameter.jwt_secret.value
         }
     }

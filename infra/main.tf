@@ -7,7 +7,7 @@ terraform {
     }
 
     backend "s3" {
-        bucket = "garage-terraform-state-116023293527"
+        bucket = "garage-terraform-state-211125475874"
         key    = "terraform.tfstate"
         region = "us-east-1"
     }

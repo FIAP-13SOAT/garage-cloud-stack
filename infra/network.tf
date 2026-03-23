@@ -104,16 +104,6 @@ resource "aws_subnet" "private_subnet_b" {
     }
 }
 
-# DB Subnet Group para RDS (requer subnets em pelo menos 2 AZs)
-resource "aws_db_subnet_group" "main" {
-    name       = "${local.projectName}-db-subnet-group"
-    subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
-
-    tags = {
-        Name = "${local.projectName}-db-subnet-group"
-    }
-}
-
 ########################################
 # NAT GATEWAY
 ########################################
