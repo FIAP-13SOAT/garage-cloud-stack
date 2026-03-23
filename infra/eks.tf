@@ -105,3 +105,24 @@ resource "aws_eks_access_policy_association" "eks-policy-voclabs" {
         type = "cluster"
     }
 }
+
+
+########################################
+# AUTO-APPLY: Kubernetes Service (LB Interno)
+########################################
+
+# Aplica automaticamente o manifesto do Service com Load Balancer interno
+# após o cluster EKS e os nodes estarem prontos
+resource "null_resource" "apply_k8s_service" {
+    depends_on = [
+        aws_eks_node_group.main,
+        aws_eks_access_policy_association.eks-policy
+    ]
+
+    provisioner "local-exec" {
+        command = <<-EOT
+            aws eks update-kubeconfig --region ${local.awsRegion} --name ${aws_eks_cluster.eks_cluster.name}
+            kubectl apply -f ../k8s/service.yaml
+        EOT
+    }
+}

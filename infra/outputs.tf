@@ -8,22 +8,28 @@ output "kubeconfig" {
     value       = aws_eks_cluster.eks_cluster.endpoint
 }
 
-# Endpoint do banco RDS para conexão da aplicação
-output "rds_endpoint" {
-    description = "Endpoint do banco PostgreSQL"
-    value       = aws_db_instance.postgres.endpoint
+# VPC ID para referência cross-repository
+output "vpc_id" {
+    description = "VPC ID"
+    value       = aws_vpc.main.id
 }
 
-# Porta do banco RDS
-output "rds_port" {
-    description = "Porta do banco PostgreSQL"
-    value       = aws_db_instance.postgres.port
+# IDs das subnets privadas para o DB Subnet Group
+output "private_subnet_ids" {
+    description = "Private subnet IDs"
+    value       = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
 }
 
-# ARN do secret com a senha do banco
-output "db_secret_arn" {
-    description = "ARN do secret contendo a senha do banco PostgreSQL"
-    value       = length(aws_db_instance.postgres.master_user_secret) > 0 ? aws_db_instance.postgres.master_user_secret[0].secret_arn : ""
+# Security Group gerenciado do cluster EKS
+output "eks_cluster_sg_id" {
+    description = "EKS cluster managed security group ID"
+    value       = aws_eks_cluster.eks_cluster.vpc_config[0].cluster_security_group_id
+}
+
+# Security Group da Lambda
+output "lambda_sg_id" {
+    description = "Lambda security group ID"
+    value       = aws_security_group.lambda.id
 }
 
 # output "ecr_repository_url" {

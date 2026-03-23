@@ -2,13 +2,6 @@ name: Terraform - Provision Infrastructure
 
 on:
     workflow_call:
-        outputs:
-            db_endpoint:
-                description: "RDS endpoint"
-                value: ${{ jobs.terraform.outputs.db_endpoint }}
-            db_secret_arn:
-                description: "ARN do secret com credenciais do banco"
-                value: ${{ jobs.terraform.outputs.db_secret_arn }}
 
 env:
     AWS_REGION: us-east-1
@@ -21,10 +14,6 @@ jobs:
         concurrency:
             group: terraform-${{ github.ref }}
             cancel-in-progress: false
-
-        outputs:
-            db_endpoint: ${{ steps.tf-output.outputs.db_endpoint }}
-            db_secret_arn: ${{ steps.tf-output.outputs.db_secret_arn }}
 
         steps:
             - name: Checkout code
@@ -40,9 +29,9 @@ jobs:
 
             - name: Create S3 bucket for Terraform state if not exists
               run: |
-                  if ! aws s3 ls s3://garage-terraform-state-381492225614 2>/dev/null; then
+                  if ! aws s3 ls s3://garage-terraform-state-211125475874 2>/dev/null; then
                     echo "Creating S3 bucket for Terraform state..."
-                    aws s3 mb s3://garage-terraform-state-381492225614 --region us-east-1
+                    aws s3 mb s3://garage-terraform-state-211125475874 --region us-east-1
                   else
                     echo "S3 bucket already exists"
                   fi
@@ -75,13 +64,3 @@ jobs:
               run: |
                   echo "Applying infrastructure changes..."
                   terraform apply -auto-approve
-
-            - name: Get Terraform Outputs
-              id: tf-output
-              working-directory: ./infra
-              run: |
-                  DB_ENDPOINT=$(terraform output -raw rds_endpoint)
-                  DB_SECRET_ARN=$(terraform output -raw db_secret_arn)
-
-                  echo "db_endpoint=$DB_ENDPOINT" >> $GITHUB_OUTPUT
-                  echo "db_secret_arn=$DB_SECRET_ARN" >> $GITHUB_OUTPUT
