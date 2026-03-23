@@ -4,6 +4,13 @@ variable "accountId" {
 }
 
 variable "roleName" {
-    description = "IAM Role name for EKS access"
+    description = "AWS Role Name for Terraform to assume"
     type        = string
+}
+
+
+variable "environment" {
+    description = "Ambiente (prod, staging, dev)"
+    type        = string
+    default     = "prod"
 }
