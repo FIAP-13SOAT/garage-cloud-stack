@@ -24,26 +24,26 @@ resource "aws_lambda_permission" "allow_login" {
     source_arn    = "${aws_apigatewayv2_api.lambda_api.execution_arn}/*/*"
 }
 
-# 1. O novo autorizador do tipo REQUEST
+# Autorizador do tipo REQUEST
 resource "aws_apigatewayv2_authorizer" "lambda_authorizer" {
     api_id           = aws_apigatewayv2_api.lambda_api.id
     name             = "custom-lambda-authorizer"
     authorizer_type  = "REQUEST"
 
-    # Aqui vai o ARN de invocação da sua NOVA Lambda de Autorização
     authorizer_uri   = aws_lambda_function.auth_lambda.invoke_arn
 
     identity_sources = ["$request.header.Authorization"]
     authorizer_payload_format_version = "2.0"
 }
 
-# 2. Atualize a sua rota protegida
+# Rota protegida (só cria quando o EKS LB estiver configurado)
 resource "aws_apigatewayv2_route" "protected" {
+    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "$default"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
 
-    authorization_type = "CUSTOM" # Muda de JWT para CUSTOM
+    authorization_type = "CUSTOM"
     authorizer_id      = aws_apigatewayv2_authorizer.lambda_authorizer.id
 }
 
@@ -58,15 +58,18 @@ resource "aws_lambda_permission" "allow_authorizer" {
 variable "eks_lb_listener_arn" {
     description = "ARN do listener do Load Balancer interno do EKS"
     type        = string
+    default     = ""
 }
 
 resource "aws_apigatewayv2_vpc_link" "eks_link" {
+    count              = var.eks_lb_listener_arn != "" ? 1 : 0
     name               = "${var.lambda_function_name}-eks-link"
     security_group_ids = [aws_security_group.main.id]
-    subnet_ids         = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
+    subnet_ids         = [local.private_subnet_ids[0], local.private_subnet_ids[1]]
 }
 
 resource "aws_apigatewayv2_integration" "eks_integration" {
+    count              = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id             = aws_apigatewayv2_api.lambda_api.id
     integration_type   = "HTTP_PROXY"
     integration_method = "ANY"
@@ -74,7 +77,7 @@ resource "aws_apigatewayv2_integration" "eks_integration" {
     integration_uri    = var.eks_lb_listener_arn
 
     connection_type = "VPC_LINK"
-    connection_id   = aws_apigatewayv2_vpc_link.eks_link.id
+    connection_id   = aws_apigatewayv2_vpc_link.eks_link[0].id
 }
 
 resource "aws_apigatewayv2_stage" "live" {

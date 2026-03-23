@@ -10,8 +10,8 @@ resource "aws_eks_cluster" "eks_cluster" {
 
     vpc_config {
         subnet_ids = [
-            aws_subnet.private_subnet.id,
-            aws_subnet.private_subnet_b.id
+            local.private_subnet_ids[0],
+            local.private_subnet_ids[1]
         ]
         security_group_ids = [
             aws_security_group.main.id
@@ -35,8 +35,8 @@ resource "aws_eks_node_group" "main" {
     node_group_name = "node-group-01"
     node_role_arn = "arn:aws:iam::${var.accountId}:role/LabRole"
     subnet_ids = [
-        aws_subnet.private_subnet.id,
-        aws_subnet.private_subnet_b.id
+        local.private_subnet_ids[0],
+        local.private_subnet_ids[1]
     ]
     instance_types = [
         "t3.medium"

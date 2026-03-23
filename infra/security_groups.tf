@@ -5,7 +5,7 @@
 # Security Group para o EKS cluster - controla tráfego de rede
 resource "aws_security_group" "main" {
     name_prefix = "${local.projectName}-eks-sg"
-    vpc_id      = aws_vpc.main.id
+    vpc_id      = local.vpc_id
 
     # Permite comunicação interna com API Server do EKS e outros componentes do cluster
     ingress {
@@ -39,14 +39,14 @@ resource "aws_security_group" "main" {
     }
 
     tags = {
-        name = "${local.projectName}-eks-security-group"
+        Name = "${local.projectName}-eks-security-group"
     }
 }
 
 # Security Group para Lambda
 resource "aws_security_group" "lambda" {
     name_prefix = "${local.projectName}-lambda-sg"
-    vpc_id      = aws_vpc.main.id
+    vpc_id      = local.vpc_id
 
     egress {
         from_port   = 0
@@ -56,6 +56,6 @@ resource "aws_security_group" "lambda" {
     }
 
     tags = {
-        name = "${local.projectName}-lambda-security-group"
+        Name = "${local.projectName}-lambda-security-group"
     }
 }
