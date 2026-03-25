@@ -10,6 +10,10 @@ data "aws_ssm_parameter" "db_secret_arn" {
     name = "/garage/prod/db/secret_arn"
 }
 
+data "aws_secretsmanager_secret_version" "db_credentials" {
+    secret_id = data.aws_ssm_parameter.db_secret_arn.value
+}
+
 ########################################
 # LAMBDA - Auth Issuer (login)
 ########################################
@@ -25,7 +29,10 @@ resource "aws_lambda_function" "login_lambda" {
     memory_size = 1024
     timeout     = 30
 
-    depends_on = [aws_ecr_repository.login_lambda]
+    depends_on = [
+        aws_ecr_repository.login_lambda,
+        null_resource.seed_ecr_images
+    ]
 
     lifecycle {
         ignore_changes = [
@@ -40,11 +47,13 @@ resource "aws_lambda_function" "login_lambda" {
 
     environment {
         variables = {
-            DB_HOST     = data.aws_ssm_parameter.db_endpoint.value
-            DB_NAME     = "garage"
-            DB_USER     = "postgres"
-            DB_PASSWORD = data.aws_ssm_parameter.db_secret_arn.value
-            JWT_SECRET  = aws_ssm_parameter.jwt_secret.value
+            ENVIRONMENT    = "prod"
+            DB_HOST_PROD   = split(":", data.aws_ssm_parameter.db_endpoint.value)[0]
+            DB_PORT_PROD   = "5432"
+            DB_NAME_PROD   = "garage"
+            DB_USER_PROD   = "postgres"
+            DB_PASSWORD_PROD = jsondecode(data.aws_secretsmanager_secret_version.db_credentials.secret_string)["password"]
+            JWT_SECRET     = aws_ssm_parameter.jwt_secret.value
         }
     }
 }
@@ -64,7 +73,10 @@ resource "aws_lambda_function" "auth_lambda" {
     memory_size = 1024
     timeout     = 30
 
-    depends_on = [aws_ecr_repository.auth_lambda]
+    depends_on = [
+        aws_ecr_repository.auth_lambda,
+        null_resource.seed_ecr_images
+    ]
 
     lifecycle {
         ignore_changes = [
@@ -75,5 +87,41 @@ resource "aws_lambda_function" "auth_lambda" {
     vpc_config {
         subnet_ids         = [local.private_subnet_ids[0], local.private_subnet_ids[1]]
         security_group_ids = [aws_security_group.lambda.id]
+    }
+
+    environment {
+        variables = {
+            LAMBDA_MODE  = "validator"
+            JWT_SECRET   = aws_ssm_parameter.jwt_secret.value
+            ENVIRONMENT  = "prod"
+        }
+    }
+}
+
+########################################
+# SEED ECR IMAGES
+# Pusha uma imagem placeholder nos ECRs para que as Lambdas possam ser
+# criadas no primeiro terraform apply. O pipeline do auth-issuer substitui
+# essas imagens pela versão real a cada push na master.
+########################################
+
+resource "null_resource" "seed_ecr_images" {
+    depends_on = [
+        aws_ecr_repository.login_lambda,
+        aws_ecr_repository.auth_lambda
+    ]
+
+    provisioner "local-exec" {
+        command = <<-EOT
+            aws ecr get-login-password --region ${local.awsRegion} | docker login --username AWS --password-stdin ${var.accountId}.dkr.ecr.${local.awsRegion}.amazonaws.com
+
+            docker pull public.ecr.aws/lambda/provided:al2023
+
+            docker tag public.ecr.aws/lambda/provided:al2023 ${aws_ecr_repository.login_lambda.repository_url}:latest
+            docker push ${aws_ecr_repository.login_lambda.repository_url}:latest
+
+            docker tag public.ecr.aws/lambda/provided:al2023 ${aws_ecr_repository.auth_lambda.repository_url}:latest
+            docker push ${aws_ecr_repository.auth_lambda.repository_url}:latest
+        EOT
     }
 }
