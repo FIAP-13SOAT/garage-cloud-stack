@@ -1,4 +1,4 @@
-accountId = "211125475874"
+accountId = "500431122450"
 roleName = "LabRole"
 
 # =============================================================================
@@ -29,4 +29,4 @@ roleName = "LabRole"
 # Exemplo:
 #   eks_lb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:211125475874:listener/net/k8s-internal-lb/abc123def456/789ghi012jkl"
 # =============================================================================
-eks_lb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:211125475874:listener/net/a4ee653aa3e0341219456eabc66f88c0/23cec29ca3a0c20c/7e7e554426f7c2c7"
+eks_lb_listener_arn = "arn:aws:elasticloadbalancing:us-east-1:500431122450:listener/net/a4ee653aa3e0341219456eabc66f88c0/23cec29ca3a0c20c/7e7e554426f7c2c7"

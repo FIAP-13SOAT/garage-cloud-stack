@@ -7,7 +7,7 @@ terraform {
     }
 
     backend "s3" {
-        bucket = "garage-terraform-state-211125475874"
+        bucket = "garage-terraform-state-500431122450"
         key    = "terraform.tfstate"
         region = "us-east-1"
     }
@@ -29,7 +29,7 @@ provider "aws" {
 data "terraform_remote_state" "database" {
     backend = "s3"
     config = {
-        bucket = "garage-terraform-state-211125475874"
+        bucket = "garage-terraform-state-500431122450"
         key    = "database/terraform.tfstate"
         region = "us-east-1"
     }
