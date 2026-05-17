@@ -126,3 +126,26 @@ resource "null_resource" "apply_k8s_service" {
         EOT
     }
 }
+
+########################################
+# AUTO-APPLY: Nginx router (ConfigMap + Deployment)
+# Re-executa sempre que os arquivos nginx mudam
+########################################
+
+resource "null_resource" "apply_k8s_nginx" {
+    triggers = {
+        nginx_configmap   = filemd5("../k8s/nginx/configmap.yaml")
+        nginx_deployment  = filemd5("../k8s/nginx/deployment.yaml")
+    }
+
+    depends_on = [
+        null_resource.apply_k8s_service
+    ]
+
+    provisioner "local-exec" {
+        command = <<-EOT
+            aws eks update-kubeconfig --region ${local.awsRegion} --name ${aws_eks_cluster.eks_cluster.name}
+            kubectl apply -f ../k8s/nginx/
+        EOT
+    }
+}

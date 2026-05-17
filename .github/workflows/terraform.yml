@@ -50,6 +50,8 @@ jobs:
               id: plan
               working-directory: ./infra
               continue-on-error: true
+              env:
+                  TF_VAR_dd_api_key: ${{ secrets.DD_API_KEY }}
               run: |
                   set +e
                   terraform plan -detailed-exitcode
@@ -61,6 +63,8 @@ jobs:
             - name: Terraform Apply
               if: steps.plan.outputs.exitcode == '2'
               working-directory: ./infra
+              env:
+                  TF_VAR_dd_api_key: ${{ secrets.DD_API_KEY }}
               run: |
                   echo "Applying infrastructure changes..."
                   terraform apply -auto-approve

@@ -25,3 +25,9 @@ variable "eks_lb_listener_arn" {
     type        = string
     default     = ""
 }
+
+variable "dd_api_key" {
+    description = "Datadog API Key para o Datadog Agent DaemonSet no EKS"
+    type        = string
+    sensitive   = true
+}

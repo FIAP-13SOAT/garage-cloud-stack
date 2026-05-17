@@ -158,3 +158,14 @@ resource "aws_apigatewayv2_stage" "live" {
     name        = "$default"
     auto_deploy = true
 }
+
+########################################
+# SSM — API Gateway URL (JWT issuer para o auth-service)
+########################################
+
+resource "aws_ssm_parameter" "api_gateway_url" {
+    name      = "/${local.projectName}/prod/api_gateway_url"
+    type      = "String"
+    value     = "https://${aws_apigatewayv2_api.lambda_api.id}.execute-api.${local.awsRegion}.amazonaws.com"
+    overwrite = true
+}
