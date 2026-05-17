@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-router-config
+  namespace: default
+data:
+  default.conf: |
+    upstream garage_auth {
+        server garage-auth-service:8083;
+    }
+    upstream garage_os {
+        server garage-os-service:8080;
+    }
+    upstream garage_billing {
+        server garage-billing-service:8081;
+    }
+    upstream garage_execution {
+        server garage-execution-service:3000;
+    }
+    upstream garage_stock {
+        server garage-stock-service:8082;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization     $http_authorization;
+        proxy_http_version 1.1;
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # Nginx health — usado pelas probes do deployment
+        location = /health {
+            return 200 '{"status":"ok"}';
+            add_header Content-Type application/json;
+        }
+
+        # Auth service
+        location = /login                        { proxy_pass http://garage_auth; }
+        location = /admin/login                  { proxy_pass http://garage_auth; }
+        location ^~ /.well-known/                { proxy_pass http://garage_auth; }
+        location ^~ /admin/users                 { proxy_pass http://garage_auth; }
+        location ^~ /admin/customer-credentials  { proxy_pass http://garage_auth; }
+
+        # Execution service — regex antes do prefixo /service-orders para ter prioridade
+        location ~ ^/service-orders/[^/]+/(execution|start-execution|finish-execution)(/|$) {
+            proxy_pass http://garage_execution;
+        }
+
+        # OS service — prefixo simples (sem ^~) para não bloquear o regex acima
+        location /service-orders  { proxy_pass http://garage_os; }
+        location ^~ /customers    { proxy_pass http://garage_os; }
+        location ^~ /vehicles     { proxy_pass http://garage_os; }
+        location ^~ /service-types { proxy_pass http://garage_os; }
+        location ^~ /public/      { proxy_pass http://garage_os; }
+
+        # Billing service
+        location ^~ /quotes    { proxy_pass http://garage_billing; }
+        location ^~ /payments  { proxy_pass http://garage_billing; }
+        location ^~ /webhook   { proxy_pass http://garage_billing; }
+
+        # Stock service
+        location ^~ /stock-movements { proxy_pass http://garage_stock; }
+        location ^~ /stock           { proxy_pass http://garage_stock; }
+        location ^~ /notifications   { proxy_pass http://garage_stock; }
+    }
