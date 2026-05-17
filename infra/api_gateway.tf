@@ -1,14 +1,12 @@
 ########################################
 # HTTP API GATEWAY
 #
-# Substitui os Lambdas Go (auth-issuer + auth-validator) pelo JWT Authorizer
-# nativo do HTTP API. Tokens são emitidos pelo garage-auth-service (EKS) e
-# validados pelo próprio API Gateway usando OIDC discovery + JWKS.
+# Tokens são emitidos pelo garage-auth-service (EKS) e validados pelo
+# próprio API Gateway usando OIDC discovery + JWKS.
 #
-# Pré-requisitos no garage-auth-service (ver #7.11-#7.15 / follow-up):
-#   - JWT inclui `iss = <api_endpoint>` e `aud = var.jwt_audience`
-#   - GET /.well-known/openid-configuration devolve { issuer, jwks_uri }
-#   - GET /.well-known/jwks.json expõe a chave pública (já implementado em #7.14)
+# O backend é o Ingress NGINX dentro do cluster (ver ingress.tf). O
+# listener do NLB criado pelo Helm é descoberto via data sources
+# logo abaixo — não precisa mais ser preenchido manualmente.
 ########################################
 
 resource "aws_apigatewayv2_api" "lambda_api" {
@@ -24,26 +22,41 @@ resource "aws_apigatewayv2_api" "lambda_api" {
 }
 
 ########################################
+# DESCOBERTA DO NLB DO INGRESS
+########################################
+
+# O Service do Ingress NGINX expõe o hostname do NLB; usamos para
+# achar o ARN do load balancer e do listener (porta 80).
+data "aws_lb" "ingress" {
+    name = split("-", data.kubernetes_service.ingress_lb.status[0].load_balancer[0].ingress[0].hostname)[0]
+
+    depends_on = [helm_release.ingress_nginx]
+}
+
+data "aws_lb_listener" "ingress" {
+    load_balancer_arn = data.aws_lb.ingress.arn
+    port              = 80
+}
+
+########################################
 # VPC LINK - rota o API Gateway para dentro da VPC onde o EKS roda
 ########################################
 
 resource "aws_apigatewayv2_vpc_link" "eks_link" {
-    count              = var.eks_lb_listener_arn != "" ? 1 : 0
     name               = "${var.api_name}-eks-link"
     security_group_ids = [aws_security_group.main.id]
     subnet_ids         = [local.private_subnet_ids[0], local.private_subnet_ids[1]]
 }
 
 resource "aws_apigatewayv2_integration" "eks_integration" {
-    count              = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id             = aws_apigatewayv2_api.lambda_api.id
     integration_type   = "HTTP_PROXY"
     integration_method = "ANY"
 
-    integration_uri    = var.eks_lb_listener_arn
+    integration_uri = data.aws_lb_listener.ingress.arn
 
     connection_type = "VPC_LINK"
-    connection_id   = aws_apigatewayv2_vpc_link.eks_link[0].id
+    connection_id   = aws_apigatewayv2_vpc_link.eks_link.id
 }
 
 ########################################
@@ -73,38 +86,33 @@ resource "aws_apigatewayv2_authorizer" "jwt" {
 ########################################
 
 resource "aws_apigatewayv2_route" "public_login" {
-    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "POST /login"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 }
 
 resource "aws_apigatewayv2_route" "public_admin_login" {
-    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "POST /admin/login"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 }
 
 resource "aws_apigatewayv2_route" "public_well_known" {
-    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "GET /.well-known/{proxy+}"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 }
 
 resource "aws_apigatewayv2_route" "public_customers_create" {
-    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "POST /customers"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 }
 
 resource "aws_apigatewayv2_route" "public_service_orders" {
-    count     = var.eks_lb_listener_arn != "" ? 1 : 0
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = "ANY /public/{proxy+}"
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 }
 
 ########################################
@@ -114,7 +122,7 @@ resource "aws_apigatewayv2_route" "public_service_orders" {
 ########################################
 
 locals {
-    protected_routes = var.eks_lb_listener_arn != "" ? {
+    protected_routes = {
         customers_list           = "GET /customers"
         customers_proxy          = "ANY /customers/{proxy+}"
         vehicles                 = "ANY /vehicles"
@@ -135,7 +143,7 @@ locals {
         notifications_proxy      = "ANY /notifications/{proxy+}"
         admin_users              = "ANY /admin/users"
         admin_users_proxy        = "ANY /admin/users/{proxy+}"
-    } : {}
+    }
 }
 
 resource "aws_apigatewayv2_route" "protected" {
@@ -143,7 +151,7 @@ resource "aws_apigatewayv2_route" "protected" {
 
     api_id    = aws_apigatewayv2_api.lambda_api.id
     route_key = each.value
-    target    = "integrations/${aws_apigatewayv2_integration.eks_integration[0].id}"
+    target    = "integrations/${aws_apigatewayv2_integration.eks_integration.id}"
 
     authorization_type = "JWT"
     authorizer_id      = aws_apigatewayv2_authorizer.jwt.id

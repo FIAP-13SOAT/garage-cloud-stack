@@ -19,9 +19,3 @@ variable "jwt_audience" {
     type        = string
     default     = "garage-api"
 }
-
-variable "eks_lb_listener_arn" {
-    description = "ARN do listener do Load Balancer interno do EKS (preenchido pelo deploy do garage-os-service)"
-    type        = string
-    default     = ""
-}

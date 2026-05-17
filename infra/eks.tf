@@ -41,10 +41,12 @@ resource "aws_eks_node_group" "main" {
     instance_types = [
         "t3.medium"
     ]
+    # 5 microserviços × 2 réplicas + Ingress NGINX + RabbitMQ + DaemonSets.
+    # 3 nodes t3.medium cobrem com folga; teto em 5 para HPAs eventuais.
     scaling_config {
-        desired_size = 2
-        max_size     = 3
-        min_size     = 1
+        desired_size = 3
+        max_size     = 5
+        min_size     = 2
     }
     update_config {
         max_unavailable = 1
@@ -107,22 +109,6 @@ resource "aws_eks_access_policy_association" "eks-policy-voclabs" {
 }
 
 
-########################################
-# AUTO-APPLY: Kubernetes Service (LB Interno)
-########################################
-
-# Aplica automaticamente o manifesto do Service com Load Balancer interno
-# após o cluster EKS e os nodes estarem prontos
-resource "null_resource" "apply_k8s_service" {
-    depends_on = [
-        aws_eks_node_group.main,
-        aws_eks_access_policy_association.eks-policy
-    ]
-
-    provisioner "local-exec" {
-        command = <<-EOT
-            aws eks update-kubeconfig --region ${local.awsRegion} --name ${aws_eks_cluster.eks_cluster.name}
-            kubectl apply -f ../k8s/service.yaml
-        EOT
-    }
-}
+# Ponto de entrada no cluster agora é o Ingress NGINX (ver ingress.tf),
+# provisionado via Helm. O Service genérico `garage-app` foi removido junto
+# com o monólito.
