@@ -50,6 +50,16 @@ resource "kubernetes_secret" "pg_service" {
     depends_on = [aws_eks_node_group.main]
 }
 
+########################################
+# MongoDB connection string vem do SSM provisionado pelo garage-database-infra
+# (a EC2 do Mongo e o parâmetro são criados lá; aqui só consumimos).
+########################################
+
+data "aws_ssm_parameter" "execution_mongo_url" {
+    name            = "/${local.projectName}/prod/garage-execution-service/mongo_url"
+    with_decryption = true
+}
+
 resource "kubernetes_secret" "execution" {
     metadata {
         name      = "garage-execution-service-secrets"
@@ -57,7 +67,7 @@ resource "kubernetes_secret" "execution" {
     }
 
     data = {
-        MONGO_URL    = aws_ssm_parameter.execution_mongo_url.value
+        MONGO_URL    = data.aws_ssm_parameter.execution_mongo_url.value
         RABBITMQ_URL = local.rabbitmq_url
     }
 
